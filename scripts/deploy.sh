@@ -60,6 +60,12 @@ ssh "${RPI_USER}@${RPI_IP}" bash <<REMOTE
     sudo systemctl stop gdm3 || sudo systemctl stop lightdm || true
     sleep 1
 
+    # Hide the hardware cursor
+    sudo sh -c 'echo 0 > /sys/class/graphics/fbcon/cursor_blink' 2>/dev/null || true
+    sudo sh -c 'echo 0 > /dev/input/mice' 2>/dev/null || true
+    unclutter -idle 0 -root &
+    export QT_QPA_EGLFS_HIDECURSOR=1
+
     export QT_QPA_PLATFORM=eglfs
     export QSG_RHI_BACKEND=opengl
     export QT_QPA_EGLFS_KMS_CONFIG=/home/${RPI_USER}/cluster/eglfs.json

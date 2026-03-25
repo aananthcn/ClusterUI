@@ -152,7 +152,7 @@ Window {
                 right:  parent.right
                 //bottom: parent.bottom
                 verticalCenter: tachometer.verticalCenter
-                margins: 24
+                margins: 50
             }
             visible: true
         }
