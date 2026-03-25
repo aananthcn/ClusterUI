@@ -26,7 +26,7 @@ sudo apt update && sudo apt install -y \
   libxkbcommon-dev libfontconfig1-dev \
   libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
   gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
-  python3 python3-pip curl ssh rsync
+  python3 python3-pip curl ssh rsync docker.io
 ```
 Then install Qt by following the instructions in the link:
 https://doc.qt.io/qt-6/get-and-install-qt-cli.html
@@ -35,11 +35,11 @@ https://doc.qt.io/qt-6/get-and-install-qt-cli.html
 #### Copy RPi5 libs to PC for Cross Compilation and Linking
 Follow these steps if you want to cross compile the app from the PC and deploy it easily.
 ```
-mkdir ~/labs/ui/qt/rpi5/root
-rsync -avz <pi_user>@<rpi5-ip>:/lib ~/labs/ui/qt/rpi5/root \
+mkdir -p ~/sdk/rpi5/root
+rsync -avz <pi_user>@<rpi5-ip>:/lib ~/sdk/rpi5/root \
   --rsync-path="sudo rsync"
 
-rsync -avz <pi_user>@<rpi5-ip>:/usr ~/labs/ui/qt/rpi5/root \
+rsync -avz <pi_user>@<rpi5-ip>:/usr ~/sdk/rpi5/root \
   --rsync-path="sudo rsync" \
   --exclude '/usr/man' --exclude '/usr/share/doc'
 ```
@@ -65,11 +65,25 @@ cmake --build build/pc/ -j16
 ```
 
 ### On Target (RPi5)
+The deploy script builds the app inside a Docker container, deploys it to the RPi5,
+stops the Wayland display manager, and launches the app using EGLFS directly on the framebuffer.
 ```
-./script/deploy.sh
+./scripts/deploy.sh [rpi5-ip] [rpi5-user]
+```
+Default IP is `192.168.10.10` and default user is `aananth`. To override:
+```
+./scripts/deploy.sh 192.168.10.20 pi
+```
+
+#### Passwordless sudo on RPi5
+The deploy script stops the display manager over SSH. Add this to `/etc/sudoers`
+on the Pi via `sudo visudo` to avoid password prompts:
+```
+<pi_user> ALL=(ALL) NOPASSWD: /bin/systemctl stop gdm3, /bin/systemctl stop lightdm
 ```
 
 ## Clean
 ```
 rm -rf build/pc
+rm -rf build/rpi5
 ```

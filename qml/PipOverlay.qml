@@ -7,8 +7,8 @@ import QtQuick
 
 Rectangle {
     id: root
-    width:  280
-    height: 158      // 16:9 at this width
+    width:  560
+    height: 316      // 16:9 at this width
     radius: 8
     color:  "#111111"
     border.color: "#333333"

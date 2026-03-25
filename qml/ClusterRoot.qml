@@ -3,8 +3,8 @@ import QtQuick.Controls
 
 Window {
     id: root
-    width:  1280
-    height: 480
+    width:  1920
+    height: 720
     visible: true
     title: "Instrument Cluster"
     color: "#0d0d0d"
@@ -147,9 +147,11 @@ Window {
 
         PipOverlay {
             id: pipOverlay
+            z: tachometer.z + 1
             anchors {
                 right:  parent.right
-                bottom: parent.bottom
+                //bottom: parent.bottom
+                verticalCenter: tachometer.verticalCenter
                 margins: 24
             }
             visible: true

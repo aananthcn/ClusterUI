@@ -27,8 +27,8 @@ Item {
             PathAngleArc {
                 centerX:    root.width  / 2
                 centerY:    root.height / 2
-                radiusX:    100
-                radiusY:    100
+                radiusX:    150
+                radiusY:    150
                 startAngle: root.minAngle + 90
                 sweepAngle: root.maxAngle - root.minAngle
             }
@@ -48,8 +48,8 @@ Item {
             PathAngleArc {
                 centerX:    root.width  / 2
                 centerY:    root.height / 2
-                radiusX:    100
-                radiusY:    100
+                radiusX:    150
+                radiusY:    150
                 startAngle: root.minAngle + 90
                 sweepAngle: root.needleAngle - root.minAngle
             }
