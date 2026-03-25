@@ -45,7 +45,8 @@ set_target_properties(cluster-ui PROPERTIES
 
 # Desktop: synthetic data. RPi cross-build: UDP socket.
 if(CMAKE_CROSSCOMPILING)
-    target_compile_definitions(cluster-ui PRIVATE USE_UDP_BRIDGE)
+    # target_compile_definitions(cluster-ui PRIVATE USE_UDP_BRIDGE) # Aananth commented this -- uncomment this & remove the line below once the PC Test software is ready
+    target_compile_definitions(cluster-ui PRIVATE USE_SYNTHETIC_BRIDGE)
 else()
     target_compile_definitions(cluster-ui PRIVATE USE_SYNTHETIC_BRIDGE)
 endif()
