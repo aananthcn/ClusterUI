@@ -13,7 +13,7 @@ Window {
     // vehicle.driveMode: 0=normal  1=sport  2=reverse
     // QML states change layout, colours, and which widgets are visible.
 
-// Use a root container to handle states and transitions
+    // Use a root container to handle states and transitions
     Rectangle {
         id: mainContainer
         anchors.fill: parent
@@ -32,7 +32,7 @@ Window {
                 name: "normal"
                 PropertyChanges { target: speedometer; x: 80;  scale: 1.0 }
                 PropertyChanges { target: tachometer;  visible: true }
-                PropertyChanges { target: pipOverlay;  visible: true }
+                PropertyChanges { target: pipOverlay;  visible: false }
                 PropertyChanges { target: modeLabel;   text: "NORMAL"; color: "#aaaaaa" }
             },
             State {

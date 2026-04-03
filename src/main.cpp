@@ -10,29 +10,28 @@ int main(int argc, char *argv[])
     // Request OpenGL ES 2.0 — works on both desktop Mesa and RPi V3D
     QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGLRhi);
 
+    // create this app
     QGuiApplication app(argc, argv);
     app.setApplicationName("ClusterUI");
     app.setApplicationVersion("0.1");
 
-    // Allow the vhal-core server address to be overridden at runtime.
-    // Default: localhost:50051
-    // Example: cluster-ui --vhal-server 192.168.1.10:50051
+    // cli usage : cluster-ui --vhal-server 192.168.1.10:50051
     QCommandLineParser parser;
     parser.addHelpOption();
     parser.addVersionOption();
     QCommandLineOption serverOpt(
-        QStringLiteral("vhal-server"),
-        QStringLiteral("vhal-core gRPC server address (host:port)"),
-        QStringLiteral("address"),
-        QStringLiteral("localhost:50051"));
+        QStringLiteral("vhal-server"), // option name
+        QStringLiteral("vhal-core gRPC server address (host:port)"), // option description
+        QStringLiteral("address"), // option value name, will contain the gRPC server address
+        QStringLiteral("localhost:50051")); // default value
     parser.addOption(serverOpt);
     parser.process(app);
 
+    // Create the vhal bridge — it connects to vhal-core and starts subscribing
     const QString serverAddress = parser.value(serverOpt);
-
-    // Create the bridge — it connects to vhal-core and starts subscribing
     VehicleBridge bridge(serverAddress);
 
+    // Create the QML engine to deal with QML file
     QQmlApplicationEngine engine;
 
     // Expose the bridge to all QML files as a context property
@@ -42,6 +41,7 @@ int main(int argc, char *argv[])
     // For RPi eglfs: set QT_QPA_PLATFORM=eglfs in environment
     const QUrl url(QStringLiteral("qrc:/ClusterUI/qml/ClusterRoot.qml"));
 
+    // connect objectCreationFailed signal to call app.exit() 
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed,
         &app,    [&app](const QUrl &) { app.exit(1); },
