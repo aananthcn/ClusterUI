@@ -1,0 +1,17 @@
+[settings]
+os=Neutrino
+arch=armv8
+compiler=qcc
+compiler.version=12.2
+compiler.cppstd=17
+compiler.libcxx=libstdc++11
+build_type=Release
+
+[buildenv]
+CC=qcc -Vgcc_ntoaarch64le
+CXX=q++ -Vgcc_ntoaarch64le
+STRIP=ntoaarch64-strip
+
+[conf]
+tools.cmake.cmaketoolchain:system_name=QNX
+tools.cmake.cmaketoolchain:system_processor=aarch64

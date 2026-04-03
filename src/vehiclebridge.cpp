@@ -1,81 +1,71 @@
 #include "vehiclebridge.h"
-#include <QtMath>
 #include <QDebug>
+#include <QMetaObject>
 
-#ifdef USE_UDP_BRIDGE
-#  include <QUdpSocket>
-#  include <QNetworkDatagram>
-static constexpr quint16 UDP_PORT = 5005;
-#endif
-
-VehicleBridge::VehicleBridge(QObject *parent)
+VehicleBridge::VehicleBridge(const QString &serverAddress, QObject *parent)
     : QObject(parent)
+    , m_grpcClient(std::make_unique<VhalGrpcClient>(serverAddress.toStdString()))
 {
-#ifdef USE_SYNTHETIC_BRIDGE
-    // Tick at 50 Hz — fast enough to make gauge animations smooth
-    m_timer = new QTimer(this);
-    m_timer->setInterval(20);
-    connect(m_timer, &QTimer::timeout, this, &VehicleBridge::tick);
-    m_timer->start();
-    qDebug() << "[VehicleBridge] synthetic mode — 50 Hz sine generator";
+    const std::vector<int32_t> props = {
+        VehicleProperty::PERF_VEHICLE_SPEED,
+        VehicleProperty::ENGINE_RPM,
+        VehicleProperty::FUEL_LEVEL,
+        VehicleProperty::GEAR_SELECTION,
+        VehicleProperty::ENGINE_COOLANT_TEMP,
+        VehicleProperty::TURN_SIGNAL_LIGHT_STATE,
+    };
 
-#elif defined(USE_UDP_BRIDGE)
-    auto *sock = new QUdpSocket(this);
-    if (!sock->bind(QHostAddress::AnyIPv4, UDP_PORT, QUdpSocket::ShareAddress)) {
-        qWarning() << "[VehicleBridge] failed to bind UDP port" << UDP_PORT;
-    } else {
-        qDebug() << "[VehicleBridge] UDP mode — listening on port" << UDP_PORT;
-    }
-    connect(sock, &QUdpSocket::readyRead, this, &VehicleBridge::readPendingData);
-#endif
+    // Poll all properties on a background thread at ~60 Hz (16 ms).
+    // The callback fires on the poll thread; we marshal to the Qt main thread
+    // via Qt::QueuedConnection so the event loop is never blocked.
+    m_grpcClient->startPolling(props, [this](const vhal::VehiclePropValue &value) {
+        float floatVal = value.float_values_size() > 0 ? value.float_values(0) : 0.0f;
+        int   intVal   = value.int32_values_size()  > 0 ? value.int32_values(0) : 0;
+
+        QMetaObject::invokeMethod(this, "onPropertyUpdate",
+                                  Qt::QueuedConnection,
+                                  Q_ARG(int,   static_cast<int>(value.prop())),
+                                  Q_ARG(float, floatVal),
+                                  Q_ARG(int,   intVal));
+    }, /*intervalMs=*/16);
+
+    qDebug() << "[VehicleBridge] polling vhal-core at" << serverAddress << "@ 60 Hz";
 }
 
-// ── Synthetic ─────────────────────────────────────────────────────────────────
-
-void VehicleBridge::tick()
+VehicleBridge::~VehicleBridge()
 {
-    m_phase += 0.015f; // ~3 full cycles per minute
-
-    VehicleState s;
-    s.speed_kmh   = 60.0f + 55.0f * qSin(m_phase);          // 5 – 115 km/h
-    s.rpm         = 1200.0f + 2800.0f * qSin(m_phase * 1.3f + 0.5f); // 0–4000 rpm
-    s.gear        = static_cast<int8_t>(qMax(1, static_cast<int>(s.speed_kmh / 30)));
-    s.fuel_pct    = 75.0f;
-    s.temp_c      = 88.0f + 4.0f * qSin(m_phase * 0.1f);
-    s.warn_engine = (m_phase > 6.0f && m_phase < 6.5f);      // brief warning flash
-    s.warn_battery= false;
-    s.warn_brake  = false;
-    // Cycle through drive modes every ~10 seconds so you can see QML transitions
-    int modeIndex = static_cast<int>(m_phase / 3.0f) % 3;
-    s.drive_mode  = static_cast<uint8_t>(modeIndex);
-
-    applyState(s);
+    m_grpcClient->stopPolling();
 }
 
-// ── UDP ───────────────────────────────────────────────────────────────────────
+// ── Slot: runs on Qt main thread ──────────────────────────────────────────────
 
-void VehicleBridge::readPendingData()
+void VehicleBridge::onPropertyUpdate(int propId, float floatVal, int intVal)
 {
-#ifdef USE_UDP_BRIDGE
-    auto *sock = qobject_cast<QUdpSocket *>(sender());
-    while (sock && sock->hasPendingDatagrams()) {
-        QNetworkDatagram dg = sock->receiveDatagram(sizeof(VehicleState));
-        if (dg.data().size() == sizeof(VehicleState)) {
-            VehicleState s;
-            memcpy(&s, dg.data().constData(), sizeof(VehicleState));
-            applyState(s);
-        } else {
-            qWarning() << "[VehicleBridge] unexpected datagram size"
-                       << dg.data().size();
+    switch (propId) {
+    case VehicleProperty::PERF_VEHICLE_SPEED:
+        m_state.speed_kmh = floatVal * 3.6f;
+        break;
+    case VehicleProperty::ENGINE_RPM:
+        m_state.rpm = floatVal;
+        break;
+    case VehicleProperty::FUEL_LEVEL:
+        {
+            constexpr float FUEL_TANK_CAPACITY_LITERS = 50.0f;
+            m_state.fuel_pct = (floatVal / FUEL_TANK_CAPACITY_LITERS) * 100.0f;
         }
+        break;
+    case VehicleProperty::GEAR_SELECTION:
+        m_state.gear = static_cast<int8_t>(intVal);
+        break;
+    case VehicleProperty::ENGINE_COOLANT_TEMP:
+        m_state.temp_c = floatVal;
+        break;
+    case VehicleProperty::TURN_SIGNAL_LIGHT_STATE:
+        m_state.warn_brake = (intVal != 0);
+        break;
+    default:
+        return;
     }
-#endif
-}
 
-// ── Common ────────────────────────────────────────────────────────────────────
-
-void VehicleBridge::applyState(const VehicleState &s)
-{
-    m_state = s;
     emit stateChanged();
 }

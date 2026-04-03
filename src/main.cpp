@@ -2,6 +2,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickWindow>
+#include <QCommandLineParser>
 #include "vehiclebridge.h"
 
 int main(int argc, char *argv[])
@@ -13,8 +14,24 @@ int main(int argc, char *argv[])
     app.setApplicationName("ClusterUI");
     app.setApplicationVersion("0.1");
 
-    // Create the bridge — it starts generating/receiving data immediately
-    VehicleBridge bridge;
+    // Allow the vhal-core server address to be overridden at runtime.
+    // Default: localhost:50051
+    // Example: cluster-ui --vhal-server 192.168.1.10:50051
+    QCommandLineParser parser;
+    parser.addHelpOption();
+    parser.addVersionOption();
+    QCommandLineOption serverOpt(
+        QStringLiteral("vhal-server"),
+        QStringLiteral("vhal-core gRPC server address (host:port)"),
+        QStringLiteral("address"),
+        QStringLiteral("localhost:50051"));
+    parser.addOption(serverOpt);
+    parser.process(app);
+
+    const QString serverAddress = parser.value(serverOpt);
+
+    // Create the bridge — it connects to vhal-core and starts subscribing
+    VehicleBridge bridge(serverAddress);
 
     QQmlApplicationEngine engine;
 

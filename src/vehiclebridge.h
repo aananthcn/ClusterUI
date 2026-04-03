@@ -1,14 +1,14 @@
 #pragma once
 #include <QObject>
-#include <QTimer>
 #include <QString>
+#include <memory>
 #include "vehiclestate.h"
+#include "VhalGrpcClient.h"
 
-// VehicleBridge exposes vehicle state to QML as Q_PROPERTYs.
-// On desktop (USE_SYNTHETIC_BRIDGE): a QTimer drives a sine-wave
-// speed + RPM so all animations are exercised without hardware.
-// On RPi-2 (USE_UDP_BRIDGE): a QUdpSocket receives packed
-// VehicleState structs from the Linux CAN domain.
+// VehicleBridge exposes live vehicle state to QML as Q_PROPERTYs.
+// It owns a VhalGrpcClient that polls vhal-core over gRPC on a background
+// thread at ~60 Hz. Updates are marshalled to the Qt main thread via
+// Qt::QueuedConnection before emitting stateChanged().
 class VehicleBridge : public QObject
 {
     Q_OBJECT
@@ -24,7 +24,9 @@ class VehicleBridge : public QObject
     Q_PROPERTY(int     driveMode  READ driveMode  NOTIFY stateChanged)
 
 public:
-    explicit VehicleBridge(QObject *parent = nullptr);
+    explicit VehicleBridge(const QString &serverAddress = QStringLiteral("localhost:50051"),
+                           QObject *parent = nullptr);
+    ~VehicleBridge();
 
     float speed()      const { return m_state.speed_kmh; }
     float rpm()        const { return m_state.rpm; }
@@ -40,13 +42,10 @@ signals:
     void stateChanged();
 
 private slots:
-    void tick();          // synthetic: called by QTimer
-    void readPendingData(); // UDP: called by QUdpSocket::readyRead
+    // Marshalled from the poll thread to the Qt main thread.
+    void onPropertyUpdate(int propId, float floatVal, int intVal);
 
 private:
-    void applyState(const VehicleState &s);
-
-    VehicleState m_state;
-    float        m_phase = 0.0f; // synthetic sine phase
-    QTimer      *m_timer = nullptr;
+    VehicleState                    m_state;
+    std::unique_ptr<VhalGrpcClient> m_grpcClient;
 };

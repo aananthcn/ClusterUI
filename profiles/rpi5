@@ -1,0 +1,17 @@
+[settings]
+os=Linux
+arch=armv8
+compiler=gcc
+compiler.version=12
+compiler.cppstd=17
+compiler.libcxx=libstdc++11
+build_type=Release
+
+[buildenv]
+CC=aarch64-linux-gnu-gcc
+CXX=aarch64-linux-gnu-g++
+STRIP=aarch64-linux-gnu-strip
+
+[conf]
+tools.cmake.cmaketoolchain:system_name=Linux
+tools.cmake.cmaketoolchain:system_processor=aarch64

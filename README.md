@@ -1,89 +1,113 @@
 # ClusterUI
-A sample instrument cluster application developed using Qt.
 
-# Getting Started
-## Target Setup
-On the Raspberry Pi5, install Raspbian OS and followed by the following:
-```
-sudo apt install -y qt6-base-dev qt6-declarative-dev \
-  qt6-multimedia-dev libgles2-mesa-dev \
-  libgbm-dev libdrm-dev libegl-dev
+A Qt6-based instrument cluster UI for automotive use. It renders Speedometer, Tachometer, and ancillary gauges driven by live vehicle property data received from **vhal-core** over gRPC.
 
-sudo apt install -y qt6-wayland \
-  qt6-wayland-dev libwayland-dev libxkbcommon-dev \
-  libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
-  libfontconfig1-dev libfreetype-dev
-```
+---
 
-## Host Setup for Development
-On the PC install following packages:
-```
+## Host Setup
+
+### 1. System packages
+
+```bash
 sudo apt update && sudo apt install -y \
   build-essential cmake ninja-build git \
   gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
-  libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
-  libgbm-dev libdrm-dev libwayland-dev \
-  libxkbcommon-dev libfontconfig1-dev \
-  libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
-  gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
-  python3 python3-pip curl ssh rsync docker.io
-```
-Then install Qt by following the instructions in the link:
-https://doc.qt.io/qt-6/get-and-install-qt-cli.html
+  libgl1-mesa-dev \
+  python3 python3-pip ssh rsync
 
-
-#### Copy RPi5 libs to PC for Cross Compilation and Linking
-Follow these steps if you want to cross compile the app from the PC and deploy it easily.
-```
-mkdir -p ~/sdk/rpi5/root
-rsync -avz <pi_user>@<rpi5-ip>:/lib ~/sdk/rpi5/root \
-  --rsync-path="sudo rsync"
-
-rsync -avz <pi_user>@<rpi5-ip>:/usr ~/sdk/rpi5/root \
-  --rsync-path="sudo rsync" \
-  --exclude '/usr/man' --exclude '/usr/share/doc'
+pip install conan
 ```
 
-Run following command to know the version of the Qt on RPi5 target:
-```
-ssh aananth@192.168.10.10 "qmake6 --version || qmake --version || dpkg -l | grep qt6-base"
-```
+### 2. Qt installation
 
-Then download and install the exact version of Qt from on host in ~/Qt/<version>/gcc_64/
+Qt is not managed by Conan — install it using the [Qt Online Installer](https://www.qt.io/download-qt-installer).
 
+**For local (x86) development — Qt 6.11.0:**
+- In the installer, select **Qt 6.11.0 → Desktop gcc 64-bit**
+- Default install path: `~/Qt/6.11.0/gcc_64`
+
+**For RPi5 cross-compilation — Qt 6.8.3:**
+- In the installer, select **Qt 6.8.3 → Desktop gcc 64-bit** (host tools, always required)
+- Also select **Qt 6.8.3 → Raspberry Pi** (aarch64 target libraries)
+- Default install path: `~/Qt/6.8.3/gcc_64`
+
+Conan manages only gRPC and jsoncpp. All other dependencies are provided by Qt and the system.
+
+---
 
 ## Build
-```
-cmake -S . -B build/pc  -DCMAKE_PREFIX_PATH=~/Qt/6.11.0/gcc_64/  -GNinja 
-cmake --build build/pc/ -j16 
-```
- 
-## Run 
-### On PC
-```
-./build/pc/cluster-ui 
+
+### Local (x86 desktop)
+
+```bash
+conan install . --output-folder=build/pc --build=missing -pr profiles/linux-x86
+source build/pc/conanbuild.sh
+cmake -B build/pc \
+  -DCMAKE_TOOLCHAIN_FILE=build/pc/conan_toolchain.cmake \
+  -DCMAKE_PREFIX_PATH=$HOME/Qt/6.11.0/gcc_64 \
+  -DCMAKE_BUILD_TYPE=Release -GNinja
+cmake --build build/pc -j$(nproc)
 ```
 
-### On Target (RPi5)
-The deploy script builds the app inside a Docker container, deploys it to the RPi5,
-stops the Wayland display manager, and launches the app using EGLFS directly on the framebuffer.
-```
-./scripts/deploy.sh [rpi5-ip] [rpi5-user]
-```
-Default IP is `192.168.10.10` and default user is `aananth`. To override:
-```
-./scripts/deploy.sh 192.168.10.20 pi
+> **Important:** Always pass `-DCMAKE_PREFIX_PATH` pointing to your local Qt installation. CMake does not expand `~` — use `$HOME` or an absolute path. If you previously ran a build without this flag, clean first (`rm -rf build/pc`) before re-running, otherwise stale CMake files will be picked up instead of the local Qt.
+
+### Cross-compile for RPi5 (aarch64)
+
+```bash
+conan install . --output-folder=build/rpi5 --build=missing -pr profiles/rpi5
+source build/rpi5/conanbuild.sh
+cmake -B build/rpi5 \
+  -DCMAKE_TOOLCHAIN_FILE=build/rpi5/conan_toolchain.cmake \
+  -DCMAKE_PREFIX_PATH=$HOME/Qt/6.8.3/gcc_64 \
+  -DQT_HOST_PATH=$HOME/Qt/6.8.3/gcc_64 \
+  -DCMAKE_BUILD_TYPE=Release -GNinja
+cmake --build build/rpi5 -j$(nproc)
 ```
 
-#### Passwordless sudo on RPi5
-The deploy script stops the display manager over SSH. Add this to `/etc/sudoers`
-on the Pi via `sudo visudo` to avoid password prompts:
+> **Note:** The first Conan build compiles gRPC from source. Subsequent builds use the local cache (`~/.conan2/p/`) and are fast.
+
+---
+
+## Run Locally
+
+ClusterUI connects to a running **vhal-core** gRPC server. Start the server first, then:
+
+```bash
+./build/pc/cluster-ui --vhal-server localhost:50051
 ```
-<pi_user> ALL=(ALL) NOPASSWD: /bin/systemctl stop gdm3, /bin/systemctl stop lightdm
+
+The `--vhal-server` flag accepts any `host:port`. It defaults to `localhost:50051` if omitted.
+
+---
+
+## Deploy to RPi5
+
+The deploy script cross-compiles the app on the host, copies it to the RPi5 over rsync, and launches it:
+
+```bash
+./scripts/deploy.sh [rpi-user@rpi-ip] [vhal-server-address]
 ```
+
+Defaults: `aananth@192.168.10.10` and `localhost:50051`. Examples:
+
+```bash
+# Use defaults
+./scripts/deploy.sh
+
+# Override target only
+./scripts/deploy.sh pi@192.168.1.42
+
+# Override both target and vhal-core server
+./scripts/deploy.sh pi@192.168.1.42 192.168.1.10:50051
+```
+
+Logs on the RPi5 are written to `/tmp/cluster.log`.
+
+---
 
 ## Clean
-```
+
+```bash
 rm -rf build/pc
 rm -rf build/rpi5
 ```
