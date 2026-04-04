@@ -18,10 +18,11 @@ find_package(Qt6 REQUIRED COMPONENTS Core Qml Quick QuickControls2)
 find_package(gRPC REQUIRED)
 find_package(Protobuf REQUIRED)   # pulled in by gRPC; found via CMakeDeps
 
-# ── vhal-core gRPC stubs ──────────────────────────────────────────────────────
-# vhal-core is expected as a sibling directory (../vhal-core).
-# CarUI integration project always places ClusterUI and vhal-core side by side.
-add_subdirectory(../vhal-core ${CMAKE_BINARY_DIR}/vhal-core EXCLUDE_FROM_ALL)
+# ── vhal-core packages ────────────────────────────────────────────────────────
+# ClusterUI depends only on vhal-types (AIDL headers, stubs) and
+# vhal-ipc-grpc (VehicleServer::Stub). vhal-server is not needed at build time.
+add_subdirectory(../vhal-core/packages/vhal-types    ${CMAKE_BINARY_DIR}/vhal-types    EXCLUDE_FROM_ALL)
+add_subdirectory(../vhal-core/packages/vhal-ipc-grpc ${CMAKE_BINARY_DIR}/vhal-ipc-grpc EXCLUDE_FROM_ALL)
 
 # ── Qt setup ──────────────────────────────────────────────────────────────────
 if(Qt6_VERSION VERSION_GREATER_EQUAL "6.8")

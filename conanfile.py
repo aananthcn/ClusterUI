@@ -8,11 +8,11 @@ class ClusterUIConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
 
     def requirements(self):
-        self.requires("grpc/1.69.0")       # must match vhal-core/conanfile.py
-        self.requires("jsoncpp/1.9.5")     # required by vhal-core
+        self.requires("grpc/1.69.0")       # must match vhal-core/packages/vhal-ipc-grpc/conanfile.py
         # Qt is NOT managed by Conan — use the locally installed Qt.
         # Pass -DCMAKE_PREFIX_PATH=<qt-install-dir> to cmake instead.
         # Do NOT add protobuf here — gRPC pulls it in transitively.
+        # jsoncpp is a vhal-server dependency only — not needed by ClusterUI.
 
     def generate(self):
         tc = CMakeToolchain(self)
