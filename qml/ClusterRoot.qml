@@ -101,14 +101,14 @@ Window {
 
             // Fuel bar
             Rectangle {
-                width:  160
+                width:  240
                 height: 8
                 radius: 4
                 color:  "#333333"
                 anchors.horizontalCenter: parent.horizontalCenter
 
                 Rectangle {
-                    width:  parent.width * (vehicle.fuel / 100.0)
+                    width:  Math.min(parent.width, parent.width * (vehicle.fuel / 100.0))
                     height: parent.height
                     radius: parent.radius
                     color:  vehicle.fuel < 15 ? "#e24b4a" : "#1d9e75"
