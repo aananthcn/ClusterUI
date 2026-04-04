@@ -1,6 +1,8 @@
 #include "vehiclebridge.h"
+#include "vehiclestate.h"
 #include <QDebug>
 #include <QMetaObject>
+
 
 VehicleBridge::VehicleBridge(const QString &serverAddress, QObject *parent)
     : QObject(parent)
@@ -37,32 +39,53 @@ VehicleBridge::~VehicleBridge()
     m_grpcClient->stopPolling();
 }
 
-// ── Slot: runs on Qt main thread ──────────────────────────────────────────────
+void VehicleBridge::computeDriveMode(void) {
+    if (m_state.gear == static_cast<int8_t>(aidl_vhal::VehicleGear::GEAR_REVERSE)) {
+        // Camera Overlay happens in reverse mode
+        m_state.drive_mode = DriveMode::REVERSE;
+    }
+    else if (m_state.gear == static_cast<int8_t>(aidl_vhal::VehicleGear::GEAR_DRIVE)) {
+        m_state.drive_mode = DriveMode::SPORTS;
+    }
+    else {
+        m_state.drive_mode = DriveMode::NORMAL;
+    }
+}
 
+
+
+// ── Slot: runs on Qt main thread ──────────────────────────────────────────────
 void VehicleBridge::onPropertyUpdate(int propId, float floatVal, int intVal)
 {
-    switch (propId) {
+    switch (propId)
+    {
     case VehicleProperty::PERF_VEHICLE_SPEED:
         m_state.speed_kmh = floatVal * 3.6f;
         break;
+
     case VehicleProperty::ENGINE_RPM:
         m_state.rpm = floatVal;
         break;
-    case VehicleProperty::FUEL_LEVEL:
-        {
-            constexpr float FUEL_TANK_CAPACITY_LITERS = 50.0f;
-            m_state.fuel_pct = (floatVal / FUEL_TANK_CAPACITY_LITERS) * 100.0f;
-        }
+
+    case VehicleProperty::FUEL_LEVEL: {
+        constexpr float FUEL_TANK_CAPACITY_LITERS = 50.0f;
+        m_state.fuel_pct = (floatVal / FUEL_TANK_CAPACITY_LITERS) * 100.0f;
         break;
+    } // this brace is needed due to constexpr above.
+
     case VehicleProperty::GEAR_SELECTION:
         m_state.gear = static_cast<int8_t>(intVal);
+        computeDriveMode();
         break;
+
     case VehicleProperty::ENGINE_COOLANT_TEMP:
         m_state.temp_c = floatVal;
         break;
+
     case VehicleProperty::TURN_SIGNAL_LIGHT_STATE:
         m_state.warn_brake = (intVal != 0);
         break;
+
     default:
         return;
     }

@@ -66,6 +66,8 @@ target_link_libraries(cluster-ui PRIVATE
     gRPC::grpc++
     protobuf::libprotobuf
     VehicleServerProtoStub
+    AidlPropertyHeaders
+    AndroidStubs
 )
 
 # ── Install target — used by deploy.sh ────────────────────────────────────────

@@ -3,6 +3,7 @@
 #include <QQmlContext>
 #include <QQuickWindow>
 #include <QCommandLineParser>
+
 #include "vehiclebridge.h"
 
 int main(int argc, char *argv[])

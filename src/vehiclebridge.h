@@ -36,7 +36,7 @@ public:
     bool  warnEngine() const { return m_state.warn_engine; }
     bool  warnBatt()   const { return m_state.warn_battery; }
     bool  warnBrake()  const { return m_state.warn_brake; }
-    int   driveMode()  const { return m_state.drive_mode; }
+    int   driveMode()  const { return static_cast<int>(m_state.drive_mode); }
 
 signals:
     void stateChanged();
@@ -46,6 +46,10 @@ private slots:
     void onPropertyUpdate(int propId, float floatVal, int intVal);
 
 private:
+    // methods
+    void computeDriveMode();
+
+    // members
     VehicleState                    m_state;
     std::unique_ptr<VhalGrpcClient> m_grpcClient;
 };
