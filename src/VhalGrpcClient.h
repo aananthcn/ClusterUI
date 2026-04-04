@@ -14,12 +14,12 @@ namespace vhal = android::hardware::automotive::vehicle::proto;
 
 // VHAL property IDs (VehicleProperty.aidl)
 namespace VehicleProperty {
-    constexpr int32_t PERF_VEHICLE_SPEED      = 0x11600207; // float, m/s
-    constexpr int32_t ENGINE_RPM              = 0x11600305; // float, rpm
+    constexpr int32_t PERF_VEHICLE_SPEED     = 0x11600207; // float, m/s
+    constexpr int32_t ENGINE_RPM             = 0x11600305; // float, rpm
     constexpr int32_t FUEL_LEVEL             = 0x11600307; // float, litres
     constexpr int32_t GEAR_SELECTION         = 0x11400400; // int32, VehicleGear enum
     constexpr int32_t ENGINE_COOLANT_TEMP    = 0x11600301; // float, °C
-    constexpr int32_t TURN_SIGNAL_LIGHT_STATE = 0x11400410; // int32, VehicleTurnSignal enum
+    constexpr int32_t PARKING_BRAKE_ON       = 0x11200402; // int32, Boolean
 }
 
 // Callback invoked on the background poll thread for each property value.

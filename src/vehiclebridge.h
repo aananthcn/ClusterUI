@@ -35,7 +35,7 @@ public:
     float temp()       const { return m_state.temp_c; }
     bool  warnEngine() const { return m_state.warn_engine; }
     bool  warnBatt()   const { return m_state.warn_battery; }
-    bool  warnBrake()  const { return m_state.warn_brake; }
+    bool  warnBrake()  const { return m_state.park_brake; }
     int   driveMode()  const { return static_cast<int>(m_state.drive_mode); }
 
 signals:

@@ -25,6 +25,6 @@ struct VehicleState {
     float     temp_c       = 0.0f;   // engine coolant °C
     bool      warn_engine  = false;
     bool      warn_battery = false;
-    bool      warn_brake   = false;
+    bool      park_brake   = false;
     DriveMode drive_mode   = DriveMode::NORMAL;      // 0=normal 1=sport 2=eco
 };

@@ -30,21 +30,23 @@ Window {
         states: [
             State {
                 name: "normal"
-                PropertyChanges { target: speedometer; x: 80;  scale: 1.0 }
-                PropertyChanges { target: tachometer;  visible: true }
+                PropertyChanges { target: speedometer; x: 80;  scale: 1.2 }
+                PropertyChanges { target: tachometer; scale: 1.2; visible: true }
                 PropertyChanges { target: pipOverlay;  visible: false }
                 PropertyChanges { target: modeLabel;   text: "NORMAL"; color: "#aaaaaa" }
             },
             State {
                 name: "sport"
-                PropertyChanges { target: speedometer; x: 40;  scale: 1.15 }
-                PropertyChanges { target: tachometer;  visible: true }
+                PropertyChanges { target: speedometer; x: 120; scale: 1.4 }
+                PropertyChanges { target: tachometer;
+                                  x: root.width - tachometer.width -80 -120; 
+                                  scale: 1.4; visible: true }
                 PropertyChanges { target: pipOverlay;  visible: false }
                 PropertyChanges { target: modeLabel;   text: "SPORT";  color: "#e24b4a" }
             },
             State {
                 name: "reverse"
-                PropertyChanges { target: speedometer; x: 80;  scale: 0.85 }
+                PropertyChanges { target: speedometer; x: 80;  scale: 1.0 }
                 PropertyChanges { target: tachometer;  visible: false }
                 PropertyChanges { target: pipOverlay;  visible: true  }
                 PropertyChanges { target: modeLabel;   text: "REVERSE"; color: "#f0c040" }
@@ -125,22 +127,22 @@ Window {
                 spacing: 12
 
                 Rectangle {
-                    width: 28; height: 28; radius: 14
+                    width: 48; height: 48; radius: 24
                     color:   vehicle.warnEngine  ? "#e24b4a" : "#1a1a1a"
                     border.color: "#444"; border.width: 1
-                    Text { anchors.centerIn: parent; text: "E"; color: "white"; font.pixelSize: 13 }
+                    Text { anchors.centerIn: parent; text: "E"; color: "white"; font.pixelSize: 16 }
                 }
                 Rectangle {
-                    width: 28; height: 28; radius: 14
+                    width: 48; height: 48; radius: 24
                     color:   vehicle.warnBatt    ? "#f0c040" : "#1a1a1a"
                     border.color: "#444"; border.width: 1
-                    Text { anchors.centerIn: parent; text: "B"; color: "white"; font.pixelSize: 13 }
+                    Text { anchors.centerIn: parent; text: "B"; color: "white"; font.pixelSize: 16 }
                 }
                 Rectangle {
-                    width: 28; height: 28; radius: 14
+                    width: 48; height: 48; radius: 24
                     color:   vehicle.warnBrake   ? "#e24b4a" : "#1a1a1a"
                     border.color: "#444"; border.width: 1
-                    Text { anchors.centerIn: parent; text: "!"; color: "white"; font.pixelSize: 13 }
+                    Text { anchors.centerIn: parent; text: "!"; color: "white"; font.pixelSize: 16 }
                 }
             }
         }
