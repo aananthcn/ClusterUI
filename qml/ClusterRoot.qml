@@ -93,9 +93,21 @@ Window {
 
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "GEAR  " + (vehicle.gear <= 0
-                                ? (vehicle.gear < 0 ? "R" : "N")
-                                : vehicle.gear.toString())
+                text: "GEAR  " + {
+                    0x0001: "N",
+                    0x0002: "R",
+                    0x0004: "P",
+                    0x0008: "D",
+                    0x0010: "1",
+                    0x0020: "2",
+                    0x0040: "3",
+                    0x0080: "4",
+                    0x0100: "5",
+                    0x0200: "6",
+                    0x0400: "7",
+                    0x0800: "8",
+                    0x1000: "9"
+                }[vehicle.gear] || "?"
                 font.pixelSize: 32
                 font.bold: true
                 color: "#ffffff"

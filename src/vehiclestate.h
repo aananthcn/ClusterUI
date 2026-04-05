@@ -20,7 +20,7 @@ enum class DriveMode : uint8_t {
 struct VehicleState {
     float     speed_kmh    = 0.0f;   // 0 – 240
     float     rpm          = 0.0f;   // 0 – 8000
-    int8_t    gear         = 0;      // -1 = R, 0 = N, 1–8 = forward
+    int32_t   gear         = 0;      // raw VehicleGear bitmask (0x0001=N, 0x0002=R, 0x0004=P, 0x0008=D, 0x0010–0x1000=1–9)
     float     fuel_pct     = 0.0f;   // 0 – 100
     float     temp_c       = 0.0f;   // engine coolant °C
     bool      warn_engine  = false;

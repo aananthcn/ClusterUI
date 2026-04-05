@@ -79,7 +79,7 @@ void VehicleBridge::onPropertyUpdate(int propId, float floatVal, int intVal)
     } // this brace is needed due to constexpr above.
 
     case VehicleProperty::GEAR_SELECTION:
-        m_state.gear = static_cast<int8_t>(intVal);
+        m_state.gear = static_cast<int32_t>(intVal);
         computeDriveMode(); // check the enum class aidl_vhal::VehicleGear
         break;
 
