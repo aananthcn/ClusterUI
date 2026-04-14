@@ -4,10 +4,18 @@
 #include <QQuickWindow>
 #include <QCommandLineParser>
 
+#include <gst/gst.h>
+
 #include "vehiclebridge.h"
+#include "vehiclestate.h"
+#include "RvcStreamHandler.h"
 
 int main(int argc, char *argv[])
 {
+    // Initialize GStreamer before Qt so its internal thread pool is ready.
+    // Passing nullptr skips GStreamer's own command-line parsing; we have our own.
+    gst_init(nullptr, nullptr);
+
     // Request OpenGL ES 2.0 — works on both desktop Mesa and RPi V3D
     QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGLRhi);
 
@@ -32,11 +40,29 @@ int main(int argc, char *argv[])
     const QString serverAddress = parser.value(serverOpt);
     VehicleBridge bridge(serverAddress);
 
+    // RVC stream handler: starts/stops GStreamer pipeline on gear changes
+    RvcStreamHandler rvcStream;
+
+    // Start the RTP pipeline when REVERSE gear is engaged, stop otherwise.
+    // stateChanged fires on the Qt main thread (marshalled from poll thread),
+    // so start()/stop() are always called in a safe context.
+    QObject::connect(&bridge, &VehicleBridge::stateChanged,
+                     [&bridge, &rvcStream]() {
+        constexpr int kReverse = static_cast<int>(DriveMode::REVERSE);
+        if (bridge.driveMode() == kReverse)
+            rvcStream.start();
+        else
+            rvcStream.stop();
+    });
+
     // Create the QML engine to deal with QML file
     QQmlApplicationEngine engine;
 
     // Expose the bridge to all QML files as a context property
     engine.rootContext()->setContextProperty("vehicle", &bridge);
+
+    // Expose the RVC stream handler so PipOverlay can register its VideoSink
+    engine.rootContext()->setContextProperty("rvcStream", &rvcStream);
 
     // For desktop: xcb / wayland auto-detected by Qt
     // For RPi eglfs: set QT_QPA_PLATFORM=eglfs in environment

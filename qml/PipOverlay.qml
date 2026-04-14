@@ -1,10 +1,12 @@
 import QtQuick
+import QtMultimedia
 
-// Picture-in-picture placeholder.
-// On desktop: shows a static placeholder with label.
-// Later: replace the inner Rectangle with a QtMultimedia
-// VideoOutput pointed at the RTP stream URI.
-
+// Picture-in-picture Rear View Camera overlay.
+//
+// On Component.onCompleted the VideoOutput hands its QVideoSink to the C++
+// RvcStreamHandler so decoded RTP frames can be pushed into it from the
+// GStreamer pipeline.  The placeholder text is visible while the stream is
+// not yet active (e.g. before the first frame arrives).
 Rectangle {
     id: root
     width:  560
@@ -14,32 +16,27 @@ Rectangle {
     border.color: "#333333"
     border.width: 1
 
-    // Animated placeholder — a moving gradient bar simulates
-    // video activity so you can see the PiP region while developing
-    Rectangle {
-        id: scanBar
-        width:  parent.width
-        height: 3
-        color:  "#1d9e75"
-        opacity: 0.6
-        y: 0
+    // Live camera feed — receives frames pushed by RvcStreamHandler
+    VideoOutput {
+        id: videoOutput
+        anchors.fill: parent
+        visible: rvcStream.active
 
-        NumberAnimation on y {
-            from:     0
-            to:       root.height - scanBar.height
-            duration: 1800
-            loops:    Animation.Infinite
-            easing.type: Easing.InOutSine
-        }
+        // Pass this VideoOutput's QVideoSink to the C++ handler once the
+        // component is fully constructed.  RvcStreamHandler will push every
+        // decoded RGBA frame into it from the Qt main thread.
+        Component.onCompleted: rvcStream.setVideoSink(videoSink)
     }
 
+    // Shown while the stream is not yet delivering frames
     Column {
         anchors.centerIn: parent
+        visible: !rvcStream.active
         spacing: 6
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text:           "MAP / CAMERA"
+            text:           "REVERSE CAMERA"
             font.pixelSize: 13
             font.letterSpacing: 3
             color:          "#555555"
@@ -47,7 +44,7 @@ Rectangle {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text:           "RTP stream pending"
+            text:           "Waiting for stream\u2026"
             font.pixelSize: 11
             color:          "#333333"
         }
